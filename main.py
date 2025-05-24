@@ -26,9 +26,10 @@ def print_menu():
     print("\nMAIN MENU:")
     print("1. New Game")
     print("2. Load Game")
-    print("3. About")
-    print("4. Exit")
-    return input("\nSelect an option (1-4): ")
+    print("3. Delete Game")
+    print("4. About")
+    print("5. Exit")
+    return input("\nSelect an option (1-5): ")
 
 def new_game(game_engine):
     """Create a new game."""
@@ -80,6 +81,25 @@ def load_game(game_engine):
     
     if success:
         start_game(game_engine)
+        
+def delete_game(game_engine):
+    """Delete an existing game."""
+    print("\nDELETE CHARACTER")
+    print("---------------")
+    
+    name = input("Enter the character's name to delete: ")
+    if not name:
+        print("Invalid name. Returning to main menu.")
+        return
+    
+    # Confirm deletion
+    confirm = input(f"Are you sure you want to delete the character '{name}'? This cannot be undone. (y/n): ")
+    if confirm.lower() != "y":
+        print("Deletion cancelled. Returning to main menu.")
+        return
+    
+    success, message = game_engine.delete_player_by_name(name)
+    print(f"\n{message}")
 
 def about():
     """Show information about the game."""
@@ -147,8 +167,10 @@ def main():
         elif choice == "2":
             load_game(game_engine)
         elif choice == "3":
-            about()
+            delete_game(game_engine)
         elif choice == "4":
+            about()
+        elif choice == "5":
             print("\nThank you for playing! Goodbye.")
             sys.exit(0)
         else:

@@ -73,6 +73,19 @@ class Database:
             {"_id": ObjectId(player_id)},
             {"$push": {"choices": choice_data}}
         )
+        
+    def delete_player(self, player_id):
+        """Delete a player from the database."""
+        if isinstance(player_id, str):
+            player_id = ObjectId(player_id)
+        return self.players.delete_one({"_id": player_id})
+        
+    def delete_player_by_name(self, name):
+        """Delete a player from the database by name."""
+        player = self.get_player_by_name(name)
+        if player:
+            return self.delete_player(player["_id"])
+        return None
     
     def get_item(self, item_id):
         """Get item data by ID."""

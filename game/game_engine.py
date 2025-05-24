@@ -29,7 +29,8 @@ class GameEngine:
             "available_quests": [],
             "nearby_enemies": [],
             "last_action": None,
-            "last_combat": None
+            "last_combat": None,
+            "last_command": None
         }
     
     def create_new_player(self, name, player_class):
@@ -102,6 +103,32 @@ class GameEngine:
             return False, "Player not found."
         
         return self.load_player(player_data["_id"])
+        
+    def delete_player_by_name(self, name):
+        """Delete a player character by name."""
+        player_data = self.db.get_player_by_name(name)
+        if not player_data:
+            return False, "Player not found."
+        
+        # Delete the player from the database
+        result = self.db.delete_player(player_data["_id"])
+        
+        # Reset current player if it's the one being deleted
+        if self.current_player and self.current_player["name"] == name:
+            self.current_player = None
+            self.current_location = None
+            self.game_state = {
+                "active_quests": [],
+                "available_quests": [],
+                "nearby_enemies": [],
+                "last_action": None,
+                "last_combat": None
+            }
+        
+        if result and result.deleted_count > 0:
+            return True, f"Character '{name}' has been deleted."
+        else:
+            return False, f"Failed to delete character '{name}'."
     
     def get_location_description(self):
         """Get the description of the current location."""
@@ -177,10 +204,22 @@ class GameEngine:
         if not self.current_player:
             return "No active player. Please create or load a character first."
         
+        # Check if command is None or empty
+        if command is None:
+            return "Please enter a command."
+            
         # Split the command into parts
         parts = command.lower().split()
         if not parts:
             return "Please enter a command."
+        
+        # Check if this is a repeat of the last command to prevent loops
+        last_command = self.game_state.get("last_command", "")
+        if last_command and command.lower() == last_command.lower():
+            return "I'm not sure how to process that command. Try something different or type 'help' for a list of commands."
+        
+        # Store the current command to check for loops in future calls
+        self.game_state["last_command"] = command
         
         # Process the command based on the first word
         action = parts[0]
@@ -238,6 +277,10 @@ class GameEngine:
             target_name = " ".join(parts[1:])
             return self._initiate_combat(target_name)
         
+        # Map command
+        elif action in ["map", "routes", "where"]:
+            return self._show_map()
+            
         # Help command
         elif action in ["help", "commands"]:
             return self._show_help()
@@ -405,12 +448,38 @@ class GameEngine:
         # for enemies in the current location and start combat
         return f"You prepare to fight {target_name}, but they're not here."
     
+    def _show_map(self):
+        """Show current location and available routes."""
+        if not self.current_location or not self.current_player:
+            return "You are nowhere. The void surrounds you."
+        
+        # Get current location name
+        location_name = self.current_location.get("name", "Unknown")
+        
+        # Build the response
+        response = f"You are currently in: {location_name}\n"
+        
+        # Add available connections
+        connections = []
+        for conn_id in self.current_location.get("connections", []):
+            conn_location = self.db.get_location(conn_id)
+            if conn_location:
+                connections.append(f"- {conn_location['name']}")
+        
+        if connections:
+            response += "\nAvailable routes:\n" + "\n".join(connections)
+        else:
+            response += "\nThere are no obvious exits from here."
+            
+        return response
+        
     def _show_help(self):
         """Show available commands."""
         help_text = """
 Available Commands:
 - go/move/travel [location]: Move to a new location
 - look/examine/inspect [target]: Look around or examine something specific
+- map/routes/where: Show your current location and available routes
 - inventory/items/i: Check your inventory
 - status/stats/character: Check your character status
 - quest/quests: Check your active quests
