@@ -6,6 +6,7 @@ and Google Gemini for generating responses.
 
 import os
 import sys
+from datetime import datetime
 from dotenv import load_dotenv
 
 from game.game_engine import GameEngine
@@ -27,9 +28,10 @@ def print_menu():
     print("1. New Game")
     print("2. Load Game")
     print("3. Delete Game")
-    print("4. About")
-    print("5. Exit")
-    return input("\nSelect an option (1-5): ")
+    print("4. List All Characters")
+    print("5. About")
+    print("6. Exit")
+    return input("\nSelect an option (1-6): ")
 
 def new_game(game_engine):
     """Create a new game."""
@@ -101,6 +103,33 @@ def delete_game(game_engine):
     success, message = game_engine.delete_player_by_name(name)
     print(f"\n{message}")
 
+def list_all_characters(game_engine):
+    """List all characters in the database."""
+    print("\nALL CHARACTERS")
+    print("-------------")
+    
+    success, result = game_engine.list_all_characters()
+    
+    if not success:
+        print(result)
+        return
+    
+    if not result:
+        print("No characters found in the database.")
+        return
+    
+    print(f"{'Name':<15} {'Class':<10} {'Level':<8} {'Last Played':<20}")
+    print("-" * 60)
+    
+    for player in result:
+        last_played = player.get("last_played", "Never")
+        if isinstance(last_played, datetime):
+            last_played = last_played.strftime("%Y-%m-%d %H:%M")
+        
+        print(f"{player['name']:<15} {player.get('class', 'Unknown'):<10} {player.get('level', 1):<8} {last_played:<20}")
+    
+    input("\nPress Enter to return to the main menu...")
+
 def about():
     """Show information about the game."""
     print("\nABOUT THE GAME")
@@ -169,8 +198,10 @@ def main():
         elif choice == "3":
             delete_game(game_engine)
         elif choice == "4":
-            about()
+            list_all_characters(game_engine)
         elif choice == "5":
+            about()
+        elif choice == "6":
             print("\nThank you for playing! Goodbye.")
             sys.exit(0)
         else:

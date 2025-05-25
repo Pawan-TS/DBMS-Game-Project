@@ -92,6 +92,9 @@ def initialize_session_state():
     
     if 'game_log' not in st.session_state:
         st.session_state.game_log = []
+        
+    if 'command_input' not in st.session_state:
+        st.session_state.command_input = ""
 
 def display_welcome():
     """Display the welcome message."""
@@ -103,30 +106,40 @@ def display_main_menu():
     """Display the main menu."""
     st.subheader("MAIN MENU")
     
-    col1, col2, col3 = st.columns(3)
+    # Create a centered container for buttons
+    button_container = st.container()
     
-    with col1:
-        if st.button("New Game", key="new_game_btn"):
-            st.session_state.current_screen = "new_game"
-    
-    with col2:
-        if st.button("Load Game", key="load_game_btn"):
-            st.session_state.current_screen = "load_game"
-    
-    with col3:
-        if st.button("Delete Game", key="delete_game_btn"):
-            st.session_state.current_screen = "delete_game"
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("About", key="about_btn"):
-            st.session_state.current_screen = "about"
-    
-    with col2:
-        if st.button("Exit", key="exit_btn"):
-            st.session_state.current_screen = "exit"
-            st.markdown("Thank you for playing! Close this browser tab to exit completely.")
+    # Create a more balanced layout with all buttons the same size
+    with button_container:
+        # First row - Game management buttons
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("New Game", key="new_game_btn", use_container_width=True):
+                st.session_state.current_screen = "new_game"
+        
+        with col2:
+            if st.button("Load Game", key="load_game_btn", use_container_width=True):
+                st.session_state.current_screen = "load_game"
+        
+        # Second row - Additional game management
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            if st.button("Delete Game", key="delete_game_btn", use_container_width=True):
+                st.session_state.current_screen = "delete_game"
+        
+        with col2:
+            if st.button("About", key="about_btn", use_container_width=True):
+                st.session_state.current_screen = "about"
+        
+        # Third row - Exit button centered
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col2:
+            if st.button("Exit", key="exit_btn", use_container_width=True):
+                st.session_state.current_screen = "exit"
+                st.markdown("Thank you for playing! Close this browser tab to exit completely.")
 
 def new_game_screen():
     """Create a new game screen."""
@@ -277,28 +290,38 @@ def game_screen():
         
         # Only show these buttons if a player is loaded
         if player:
-            if st.button("Character Status"):
+            # Define callback functions for sidebar buttons
+            def show_status():
                 status = st.session_state.game_engine._show_character_status()
                 st.session_state.game_log.append(status)
-            
-            if st.button("Show Inventory"):
+                
+            def show_inventory():
                 inventory = st.session_state.game_engine._show_inventory()
                 st.session_state.game_log.append(inventory)
-            
-            if st.button("Show Quests"):
+                
+            def show_quests():
                 quests = st.session_state.game_engine._show_quests()
                 st.session_state.game_log.append(quests)
+                
+            def show_help():
+                help_text = st.session_state.game_engine._show_help()
+                st.session_state.game_log.append(help_text)
+                
+            def return_to_menu():
+                if st.session_state.game_started:
+                    st.session_state.current_screen = "confirm_exit"
+                else:
+                    st.session_state.current_screen = "main_menu"
+            
+            # Display sidebar buttons
+            st.button("Character Status", on_click=show_status, key="sidebar_status")
+            st.button("Show Inventory", on_click=show_inventory, key="sidebar_inventory")
+            st.button("Show Quests", on_click=show_quests, key="sidebar_quests")
         
         # Always show help button
-        if st.button("Help"):
-            help_text = st.session_state.game_engine._show_help()
-            st.session_state.game_log.append(help_text)
+        st.button("Help", on_click=show_help if player else lambda: None, key="sidebar_help")
         
-        if st.button("Return to Main Menu"):
-            if st.session_state.game_started:
-                st.session_state.current_screen = "confirm_exit"
-            else:
-                st.session_state.current_screen = "main_menu"
+        st.button("Return to Main Menu", on_click=return_to_menu, key="sidebar_menu")
     
     # Main game area
     st.markdown("<div class='game-area'>", unsafe_allow_html=True)
@@ -314,17 +337,49 @@ def game_screen():
     
     # Command input
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-    command = st.text_input("Enter your command:", key="command_input")
     
-    if command and command.strip():  # Check if command is not None and not just whitespace
-        if command.lower() in ["quit", "exit", "menu"]:
-            st.session_state.current_screen = "confirm_exit"
-        else:
-            # Process the command
-            response = st.session_state.game_engine.process_command(command)
-            st.session_state.game_log.append(response)
+    # Define callback function for the form submission
+    def process_command():
+        if st.session_state.command_input and st.session_state.command_input.strip():
+            command = st.session_state.command_input.strip()
             
-            # Clear the command input by forcing a rerun
+            # Check if this is a quit command
+            if command.lower() in ["quit", "exit", "menu"]:
+                st.session_state.current_screen = "confirm_exit"
+            else:
+                # Process the command
+                response = st.session_state.game_engine.process_command(command)
+                st.session_state.game_log.append(response)
+            
+            # Clear the input after processing
+            st.session_state.command_input = ""
+    
+    # Use a form to handle command input
+    with st.form(key="command_form", clear_on_submit=True):
+        command = st.text_input("Enter your command:", key="command_input")
+        submit_button = st.form_submit_button("Submit", on_click=process_command)
+        
+    # Add quick command buttons for common actions
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        if st.button("Look around"):
+            response = st.session_state.game_engine.process_command("look")
+            st.session_state.game_log.append(response)
+            st.rerun()
+    with col2:
+        if st.button("Show map"):
+            response = st.session_state.game_engine.process_command("map")
+            st.session_state.game_log.append(response)
+            st.rerun()
+    with col3:
+        if st.button("Inventory"):
+            response = st.session_state.game_engine.process_command("inventory")
+            st.session_state.game_log.append(response)
+            st.rerun()
+    with col4:
+        if st.button("Help"):
+            response = st.session_state.game_engine.process_command("help")
+            st.session_state.game_log.append(response)
             st.rerun()
     
     st.markdown("</div>", unsafe_allow_html=True)

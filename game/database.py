@@ -40,6 +40,10 @@ class Database:
         """Get player data by name."""
         return self.players.find_one({"name": name})
     
+    def get_all_players(self):
+        """Get all players from the database."""
+        return list(self.players.find({}, {"name": 1, "class": 1, "level": 1, "created_at": 1, "last_played": 1}))
+    
     def update_player(self, player_id, update_data):
         """Update player data."""
         return self.players.update_one(

@@ -87,14 +87,32 @@ class GameEngine:
         # Update last played timestamp
         self.db.update_player(player_id, {"last_played": datetime.now()})
         
-        # Load starting location or last known location
-        starting_location = "village_start"  # Default starting location
-        self.current_location = self.db.get_location(starting_location)
+        # Load the most recently visited location or default to starting location
+        visited_locations = self.current_player.get("visited_locations", {})
+        
+        if visited_locations:
+            # Find the most recently visited location
+            most_recent_location = None
+            most_recent_time = None
+            
+            for location_id, visit_time in visited_locations.items():
+                if most_recent_time is None or visit_time > most_recent_time:
+                    most_recent_location = location_id
+                    most_recent_time = visit_time
+            
+            if most_recent_location:
+                self.current_location = self.db.get_location(most_recent_location)
+            else:
+                # Fallback to default starting location
+                self.current_location = self.db.get_location("village_start")
+        else:
+            # If no visited locations, use default starting location
+            self.current_location = self.db.get_location("village_start")
         
         # Update game state
         self._update_game_state()
         
-        return True, f"Loaded character: {player_data['name']} (Level {player_data['level']} {player_data['class']})"
+        return True, f"Loaded character: {player_data['name']} (Level {player_data['level']} {player_data['class']})\nYou are currently in {self.current_location['name']}."
     
     def load_player_by_name(self, name):
         """Load a player character by name."""
@@ -129,6 +147,15 @@ class GameEngine:
             return True, f"Character '{name}' has been deleted."
         else:
             return False, f"Failed to delete character '{name}'."
+            
+    def list_all_characters(self):
+        """Get a list of all characters in the database."""
+        players = self.db.get_all_players()
+        
+        if not players:
+            return False, "No characters found in the database."
+            
+        return True, players
     
     def get_location_description(self):
         """Get the description of the current location."""
@@ -191,6 +218,18 @@ class GameEngine:
         # Update current location
         self.current_location = target_location
         
+        # Update visited locations with current timestamp
+        current_time = datetime.now()
+        self.db.update_player(
+            self.current_player["_id"],
+            {f"visited_locations.{target_location['_id']}": current_time}
+        )
+        
+        # Also update the in-memory player data
+        if "visited_locations" not in self.current_player:
+            self.current_player["visited_locations"] = {}
+        self.current_player["visited_locations"][target_location["_id"]] = current_time
+        
         # Update game state
         self._update_game_state()
         
@@ -212,14 +251,6 @@ class GameEngine:
         parts = command.lower().split()
         if not parts:
             return "Please enter a command."
-        
-        # Check if this is a repeat of the last command to prevent loops
-        last_command = self.game_state.get("last_command", "")
-        if last_command and command.lower() == last_command.lower():
-            return "I'm not sure how to process that command. Try something different or type 'help' for a list of commands."
-        
-        # Store the current command to check for loops in future calls
-        self.game_state["last_command"] = command
         
         # Process the command based on the first word
         action = parts[0]
@@ -285,13 +316,44 @@ class GameEngine:
         elif action in ["help", "commands"]:
             return self._show_help()
         
-        # If no specific command is recognized, use AI to generate a response
-        return self.ai.generate_response_to_action(
-            self.current_player,
-            command,
-            self.current_location,
-            self.game_state
-        )
+        # If no specific command is recognized, check if it's a repeat command
+        last_command = self.game_state.get("last_command", "")
+        if last_command and command.lower() == last_command.lower():
+            # If it's a repeat command, suggest help
+            return "I'm not sure how to process that command. Try something different or type 'help' for a list of commands."
+        
+        # Store the current command to check for loops in future calls
+        self.game_state["last_command"] = command
+        
+        # Get available items in the current location
+        available_items = []
+        if hasattr(self.current_location, 'items'):
+            available_items = self.current_location.get('items', [])
+        
+        # Enrich the player data with more context
+        enriched_player = self.current_player.copy()
+        
+        # Add visited locations if not present
+        if 'visited_locations' not in enriched_player:
+            enriched_player['visited_locations'] = {}
+        
+        # Add current location to visited locations
+        if self.current_location and '_id' in self.current_location:
+            enriched_player['visited_locations'][self.current_location['_id']] = True
+        
+        # Use AI to generate a response for unrecognized commands
+        try:
+            ai_response = self.ai.generate_response_to_action(
+                enriched_player,
+                command,
+                self.current_location,
+                self.game_state
+            )
+            return ai_response
+        except Exception as e:
+            # Fallback if AI fails
+            print(f"AI response generation failed: {e}")
+            return "I don't understand that command. Type 'help' for a list of available commands."
     
     def _generate_base_stats(self, player_class):
         """Generate base stats for a new character based on class."""
@@ -485,6 +547,16 @@ Available Commands:
 - quest/quests: Check your active quests
 - talk/speak [npc]: Talk to an NPC
 - use/consume [item]: Use an item from your inventory
+- attack/fight [target]: Initiate combat with an enemy
+- help/commands: Show this help message
+- quit/exit/menu: Return to the main menu
+
+Examples:
+- "go town square"
+- "look around"
+- "examine chest"
+- "talk to merchant"
+- "use health potion"
 - attack/fight [target]: Attack a target
 - help/commands: Show this help message
 
