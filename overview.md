@@ -1,12 +1,13 @@
 # Fantasy RPG Text Adventure Game - Project Overview
 
 ## Project Summary
-This project is a text-based adventure game that combines traditional RPG mechanics with modern technologies. It uses MongoDB for data persistence and Google Gemini AI for generating dynamic, contextual responses. The game allows players to create characters, explore a fantasy world, interact with NPCs, complete quests, and engage in combat.
+This project is a text-based adventure game that combines traditional RPG mechanics with modern technologies. It uses MongoDB for data persistence and Google Gemini AI for generating dynamic, contextual responses. The game allows players to create characters, explore a fantasy world, interact with NPCs, complete quests, and engage in combat. The game offers both a console-based interface and a web-based interface using Streamlit.
 
 ## Key Technologies
 - **Python**: Core programming language
 - **MongoDB**: Database for storing game state, player data, and world information
 - **Google Gemini AI**: Generative AI model for creating dynamic game content and responses
+- **Streamlit**: Framework for creating the web-based user interface
 
 ## Architecture
 
@@ -34,6 +35,11 @@ The core game engine handles:
 - Quest tracking
 - Combat mechanics
 - Command processing
+
+### User Interfaces
+The game offers two interfaces:
+- **Console Interface**: Traditional text-based command-line interface
+- **Streamlit Web Interface**: Modern, interactive web-based interface with visual elements
 
 ## Features
 
@@ -68,21 +74,35 @@ The core game engine handles:
 
 ## Project Structure
 ```
-fantasy-rpg/
+dbms-proj/
 ├── .env                  # Environment variables (MongoDB URI and Gemini API key)
-├── main.py               # Main entry point for the game
+├── main.py               # Main entry point for the console version
+├── app.py                # Entry point for the Streamlit web interface
 ├── init_mongodb.py       # Script to initialize MongoDB with game data
+├── test_connections.py   # Script to test database and AI connections
 ├── README.md             # Project documentation
 ├── overview.md           # This project overview
-├── game/                 # Main game package
+├── game/                 # Main game package for console version
 │   ├── __init__.py
 │   ├── database.py       # MongoDB connection and operations
-│   ├── ai_generator.py   # Google Gemini integration
 │   ├── game_engine.py    # Core game mechanics
 │   └── data/             # Game data
 │       ├── __init__.py
 │       ├── enemies.py    # Enemy definitions
 │       └── npcs.py       # NPC definitions
+└── streamlit_app/        # Streamlit web interface
+    ├── app.py            # Main Streamlit application
+    ├── app_modular.py    # Modular version of the Streamlit app
+    ├── init_streamlit_db.py # Initialize database for Streamlit
+    ├── components/       # UI components
+    │   ├── character.py  # Character-related UI
+    │   ├── combat.py     # Combat-related UI
+    │   ├── inventory.py  # Inventory-related UI
+    │   └── quests.py     # Quest-related UI
+    └── utils/            # Utility functions
+        ├── ai_helper.py  # Google Gemini integration
+        ├── database.py   # MongoDB operations for Streamlit
+        └── session.py    # Session state management
 ```
 
 ## MongoDB Collections
@@ -107,6 +127,8 @@ The project has a functional core with:
 - MongoDB integration for data persistence
 - Google Gemini integration for text generation
 - Initial game content (locations, items, quests, NPCs)
+- Console interface for traditional text-based gameplay
+- Streamlit web interface for a more visual experience
 
 ## Future Enhancements
 Potential areas for expansion:
@@ -116,14 +138,15 @@ Potential areas for expansion:
 - Crafting system
 - Weather and time systems
 - Multiplayer capabilities
-- Web-based interface
+- Enhanced web interface with more visual elements
 
 ## Getting Started
 1. Set up MongoDB connection in `.env`
 2. Configure Google Gemini API key in `.env`
 3. Run `init_mongodb.py` to initialize the database
-4. Start the game with `python main.py`
-5. Create a character and begin your adventure!
+4. Start the console version with `python main.py`
+5. Or start the web interface with `streamlit run streamlit_app/app.py`
+6. Create a character and begin your adventure!
 
 ## Technical Challenges
 - Balancing between pre-defined game logic and AI-generated content
@@ -131,3 +154,4 @@ Potential areas for expansion:
 - Maintaining game state consistency
 - Handling natural language commands effectively
 - Managing AI response context and consistency
+- Synchronizing state between console and web interfaces

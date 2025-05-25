@@ -1,6 +1,6 @@
 # Fantasy RPG Text Adventure Game
 
-A text-based adventure game that uses MongoDB for data storage and Google Gemini for generating dynamic, contextual responses.
+A text-based adventure game that uses MongoDB for data storage and Google Gemini for generating dynamic, contextual responses. Play through a console interface or a web-based Streamlit interface.
 
 ## Features
 
@@ -10,19 +10,21 @@ A text-based adventure game that uses MongoDB for data storage and Google Gemini
 - **Character Progression**: Level up, gain items, and complete quests
 - **Rich World**: Explore locations, interact with NPCs, and battle enemies
 - **Dual Interfaces**: Play in console mode or through a stylish Streamlit web interface
+- **Modular Design**: Easily extendable game components and data structures
 
 ## Requirements
 
 - Python 3.8+
 - MongoDB (local or Atlas)
 - Google Gemini API key
+- Streamlit (for web interface)
 
 ## Installation
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/fantasy-rpg.git
-   cd fantasy-rpg
+   git clone https://github.com/yourusername/dbms-proj.git
+   cd dbms-proj
    ```
 
 2. Install the required packages:
@@ -47,7 +49,7 @@ python main.py
 ### Streamlit Web Interface
 Start the game with the Streamlit web interface by running:
 ```
-streamlit run app.py
+streamlit run streamlit_app/app.py
 ```
 
 This will start a local web server and open the game in your default web browser.
@@ -67,23 +69,46 @@ This will start a local web server and open the game in your default web browser
 ## Project Structure
 
 - `main.py`: Entry point for the console version of the game
-- `app.py`: Entry point for the Streamlit web interface
-- `game/`: Main game module
+- `app.py`: Alternative entry point for the Streamlit web interface (root directory)
+- `init_mongodb.py`: Script to initialize MongoDB with game data
+- `test_connections.py`: Script to test database and AI connections
+- `game/`: Main game package for console version
   - `game_engine.py`: Core game mechanics
-  - `database.py`: MongoDB integration
-  - `ai_generator.py`: Google Gemini integration
-  - `data/`: Game data files
+  - `database.py`: MongoDB connection and operations
+  - `data/`: Game data
     - `enemies.py`: Enemy definitions
     - `npcs.py`: NPC definitions
+- `streamlit_app/`: Streamlit web interface
+  - `app.py`: Main Streamlit application
+  - `app_modular.py`: Modular version of the Streamlit app
+  - `init_streamlit_db.py`: Initialize database for Streamlit
+  - `components/`: UI components
+    - `character.py`: Character-related UI
+    - `combat.py`: Combat-related UI
+    - `inventory.py`: Inventory-related UI
+    - `quests.py`: Quest-related UI
+  - `utils/`: Utility functions
+    - `ai_helper.py`: Google Gemini integration
+    - `database.py`: MongoDB operations for Streamlit
+    - `session.py`: Session state management
 
 ## MongoDB Collections
 
 The game uses the following MongoDB collections:
 
-- `players`: Player character data
-- `items`: Game items
-- `quests`: Available quests
-- `world`: World locations
+- `players`: Player character data, inventory, quest progress
+- `items`: Game items with properties and effects
+- `quests`: Available quests with objectives and rewards
+- `world`: World locations and connections
+- `enemies`: Enemy types and properties
+- `npcs`: Non-player characters with dialogue and quests
+
+## Character Classes
+
+The game features three character classes:
+- **Warrior**: Strong and tough, specializes in melee combat
+- **Mage**: Intelligent and magical, specializes in spells
+- **Rogue**: Quick and stealthy, specializes in critical hits
 
 ## Extending the Game
 
@@ -93,6 +118,14 @@ You can extend the game by:
 2. Creating new items in the items collection
 3. Adding new quests to the quests collection
 4. Implementing new game mechanics in the game engine
+5. Creating new UI components for the Streamlit interface
+
+## Testing
+
+You can test your database and AI connections by running:
+```
+python test_connections.py
+```
 
 ## License
 
@@ -102,3 +135,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - MongoDB for database functionality
 - Google Gemini for AI-generated content
+- Streamlit for the web interface framework
